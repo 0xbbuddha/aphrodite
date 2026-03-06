@@ -1,14 +1,14 @@
 {
-  "os": ["Linux"],
-  "languages": ["python"],
+  "os": ["Linux", "Windows"],
+  "languages": ["nim"],
   "features": {
-    "mythic": ["artifacts", "docker", "file chunking", "file browser", "rpfwd", "socks"],
-    "custom": ["key exchange", "killdate"]
+    "mythic": ["docker", "killdate"],
+    "custom": ["psk", "plaintext", "jitter"]
   },
-  "payload_output": ["python", "zip"],
-  "architectures": ["x86_64", "arm_64"],
-  "c2": ["http", "notion"],
+  "payload_output": ["binary"],
+  "architectures": ["x86_64"],
+  "c2": ["http"],
   "mythic_version": "v3.4.21",
-  "agent_version": "v2.0.0",
+  "agent_version": "v1.0.0",
   "supported_wrappers": []
 }
