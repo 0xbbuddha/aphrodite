@@ -1,0 +1,8 @@
+{
+  "name": "aphrodite",
+  "description": "Agent Mythic C2 Aphrodite - Cross-platform Nim agent",
+  "version": "0.1.0",
+  "author": "0xbbuddha",
+  "license": "MIT",
+  "exclude": []
+}
