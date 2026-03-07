@@ -1,5 +1,5 @@
 import std/[tables, json]
-import ../types
+import core/types
 
 var registry = initTable[string, CommandHandler]()
 

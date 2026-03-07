@@ -1,4 +1,4 @@
-import agent
+import core/agent
 
 when isMainModule:
   let ag = newAphroditeAgent()

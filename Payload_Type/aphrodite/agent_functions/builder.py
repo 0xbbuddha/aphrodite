@@ -255,6 +255,7 @@ NOTE: Requires PSK mode - uncheck 'Encrypted Key Exchange' in HTTP profile.
                     "--hints:off",
                     "--warnings:off",
                     "--threads:on",
+                    f"--path:{os.path.join(dst_dir, 'src')}",
                 ]
 
                 if debug:

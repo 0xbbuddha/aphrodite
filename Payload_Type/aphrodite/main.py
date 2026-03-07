@@ -37,4 +37,14 @@ from agent_functions import upload
 from agent_functions import psh
 from agent_functions import socks
 
+# --- New features ---
+from agent_functions import netstat
+from agent_functions import chmod
+from agent_functions import chown
+from agent_functions import find
+from agent_functions import write
+from agent_functions import jobs
+from agent_functions import jobkill
+from agent_functions import config
+
 mythic_container.mythic_service.start_and_run_forever()

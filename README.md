@@ -16,13 +16,13 @@ Aphrodite is a lightweight cross-platform agent written in Nim, designed for Myt
 - Kill date support
 - Static binary option (no shared library dependencies on target)
 - SOCKS5 proxy support (tunneling through the agent)
-- 28 built-in commands covering:
-  - Reconnaissance (`whoami`, `ps`, `hostname`, `ifconfig`, `arp`, `nslookup`, `uptime`)
-  - File operations (`ls`, `cat`, `cd`, `pwd`, `mkdir`, `rm`, `mv`, `cp`, `tail`, `drives`)
+- 37 built-in commands covering:
+  - Reconnaissance (`whoami`, `ps`, `hostname`, `ifconfig`, `arp`, `nslookup`, `uptime`, `netstat`)
+  - File operations (`ls`, `cat`, `cd`, `pwd`, `mkdir`, `rm`, `mv`, `cp`, `tail`, `drives`, `chmod`, `chown`, `find`, `write`)
   - File transfer (`download`, `upload`)
   - Execution (`shell`, `psh`)
   - Environment (`getenv`, `setenv`, `env`)
-  - Agent control (`sleep`, `exit`, `kill`, `echo`, `socks`)
+  - Agent control (`sleep`, `exit`, `kill`, `echo`, `socks`, `jobs`, `jobkill`, `config`)
 
 ## Installation
 
