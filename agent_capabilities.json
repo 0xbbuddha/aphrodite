@@ -3,11 +3,11 @@
   "languages": ["nim"],
   "features": {
     "mythic": ["docker", "killdate", "socks"],
-    "custom": ["psk", "plaintext", "jitter"]
+    "custom": ["psk", "eke", "plaintext", "jitter"]
   },
   "payload_output": ["binary"],
   "architectures": ["x86_64"],
-  "c2": ["http", "tcp"],
+  "c2": ["http", "websocket"],
   "mythic_version": "v3.4.21",
   "agent_version": "v1.0.0",
   "supported_wrappers": []

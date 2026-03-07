@@ -9,10 +9,10 @@ Aphrodite is a lightweight cross-platform agent written in Nim, designed for Myt
 ## Features
 
 - Linux and Windows support (cross-compiled from Linux via mingw-w64)
-- HTTP and TCP C2 profiles
+- HTTP and WebSocket C2 profiles
 - AES-256-CBC + HMAC-SHA256 encryption (PSK mode)
-- EKE mode — RSA-4096 key exchange, session AES key negotiated at runtime (Linux)
-- Plaintext mode (no encryption, for testing)
+- EKE mode — RSA-2048 key exchange, session AES key negotiated at runtime (Linux only)
+- Plaintext mode (no encryption, for testing — leave AESPSK empty)
 - Configurable sleep interval and jitter
 - Kill date support
 - Static binary option (no shared library dependencies on target)
@@ -42,19 +42,13 @@ Aphrodite is a lightweight cross-platform agent written in Nim, designed for Myt
 Aphrodite communicates over the default HTTP profile used by Mythic. All taskings and responses are done via POST requests.
 
 Encryption modes:
-- **PSK** — pre-shared AES-256 key baked at build time (disable "Encrypted Key Exchange")
-- **EKE** — RSA-4096 staging: agent generates a key pair at startup, Mythic encrypts the session AES key with the public key (Linux only)
-- **Plaintext** — no encryption, for testing
+- **PSK** — pre-shared AES-256 key baked at build time (uncheck "Encrypted Key Exchange")
+- **EKE** — RSA-2048 staging: the `staging_rsa` message is encrypted with the PSK, Mythic returns the session AES key encrypted with the agent's RSA public key. All subsequent messages use the negotiated session key (Linux only)
+- **Plaintext** — no encryption, leave AESPSK empty in the C2 profile
 
-### TCP
+### WebSocket
 
-Direct TCP connection to the Mythic server. Messages are framed with a 4-byte big-endian length prefix. Requires the [Mythic TCP C2 profile](https://github.com/MythicC2Profiles/tcp) installed on the server:
-
-```bash
-./mythic-cli install github https://github.com/MythicC2Profiles/tcp
-```
-
-Same encryption modes as HTTP.
+Persistent WebSocket connection to the Mythic server. Messages follow the Mythic WebSocket envelope format. Same encryption modes as HTTP.
 
 ## Build Options
 
@@ -73,11 +67,11 @@ Aphrodite compiles to a native binary with no runtime interpreter required on th
 
 ### Encryption
 
-| Mode       | Description                                                           |
-|------------|-----------------------------------------------------------------------|
-| PSK        | AES-256-CBC + HMAC-SHA256 with a pre-shared key baked into the binary |
-| EKE        | RSA-4096 staging — session AES key negotiated at runtime (Linux)      |
-| Plaintext  | No encryption — for lab/testing use only                              |
+| Mode       | Description                                                                                      |
+|------------|--------------------------------------------------------------------------------------------------|
+| PSK        | AES-256-CBC + HMAC-SHA256 with a pre-shared key baked into the binary                           |
+| EKE        | RSA-2048 staging — `staging_rsa` encrypted with PSK, session key negotiated via RSA (Linux only) |
+| Plaintext  | No encryption — AESPSK left empty in C2 profile, for lab/testing use only                       |
 
 ### Sleep Interval
 
@@ -87,7 +81,7 @@ Tune the sleep interval and jitter according to your operational requirements. H
 
 ### EKE — Linux Only
 
-EKE (RSA-4096 staging) requires OpenSSL at build time and is currently only supported for Linux targets. Windows builds fall back to PSK mode automatically.
+EKE (RSA-2048 staging) requires OpenSSL at build time and is currently only supported for Linux targets. Windows builds fall back to PSK mode automatically.
 
 ### Windows Cross-Compilation
 
