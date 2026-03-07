@@ -2,7 +2,7 @@
   "os": ["Linux", "Windows"],
   "languages": ["nim"],
   "features": {
-    "mythic": ["docker", "killdate"],
+    "mythic": ["docker", "killdate", "socks"],
     "custom": ["psk", "plaintext", "jitter"]
   },
   "payload_output": ["binary"],
