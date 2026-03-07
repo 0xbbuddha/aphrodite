@@ -17,14 +17,14 @@ when defined(useEke):
   # Low-level RSA wrappers
   # ---------------------------------------------------------------------------
 
-  proc rsaGenerate4096(): int =
-    ## Generate RSA-4096 key. Returns RSA* cast to int (0 on failure).
+  proc rsaGenerate2048(): int =
+    ## Generate RSA-2048 key. Returns RSA* cast to int (0 on failure).
     var h: int
     {.emit: """
       BIGNUM *e = BN_new();
       BN_set_word(e, RSA_F4);
       RSA *rsa = RSA_new();
-      if (RSA_generate_key_ex(rsa, 4096, e, NULL) <= 0) {
+      if (RSA_generate_key_ex(rsa, 2048, e, NULL) <= 0) {
         RSA_free(rsa); rsa = NULL;
       }
       BN_free(e);
@@ -53,7 +53,7 @@ when defined(useEke):
   proc rsaDecrypt(h: int, enc: string): seq[byte] =
     ## RSA-OAEP decrypt (Mythic uses PKCS1_OAEP via PyCryptodome).
     if enc.len == 0: return @[]
-    var outBuf = newSeq[byte](512)
+    var outBuf = newSeq[byte](256)
     var outLen: cint
     let srcPtr = cast[pointer](unsafeAddr enc[0])
     let srcLen = cint(enc.len)
@@ -82,8 +82,8 @@ when defined(useEke):
     h: int
 
   proc ekaGenerate*(): EkaHandle =
-    ## Generate a 4096-bit RSA key pair.
-    result = EkaHandle(h: rsaGenerate4096())
+    ## Generate a 2048-bit RSA key pair.
+    result = EkaHandle(h: rsaGenerate2048())
 
   proc ekaIsValid*(ctx: EkaHandle): bool = ctx.h != 0
 
@@ -100,7 +100,7 @@ when defined(useEke):
   proc ekaDecryptSessionKey*(ctx: EkaHandle, encB64: string): seq[byte] =
     ## Decrypt the AES session key Mythic sends back (RSA-OAEP).
     let enc = base64.decode(encB64)
-    stderr.writeLine("[EKE] encrypted key len=" & $enc.len & " (expected 512 for RSA-4096)")
+    stderr.writeLine("[EKE] encrypted key len=" & $enc.len & " (expected 256 for RSA-2048)")
     result = rsaDecrypt(ctx.h, enc)
 
   proc ekaSessionId*(): string =

