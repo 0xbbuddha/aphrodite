@@ -1,7 +1,7 @@
 FROM itsafeaturemythic/mythic_python_base:latest
 
 RUN apt-get update && apt-get install -y \
-    curl xz-utils mingw-w64 gcc git \
+    curl xz-utils mingw-w64 gcc git libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
 ENV NIM_VERSION=2.0.4

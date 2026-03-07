@@ -9,8 +9,9 @@ Aphrodite is a lightweight cross-platform agent written in Nim, designed for Myt
 ## Features
 
 - Linux and Windows support (cross-compiled from Linux via mingw-w64)
-- HTTP C2 profile
+- HTTP and TCP C2 profiles
 - AES-256-CBC + HMAC-SHA256 encryption (PSK mode)
+- EKE mode — RSA-4096 key exchange, session AES key negotiated at runtime (Linux)
 - Plaintext mode (no encryption, for testing)
 - Configurable sleep interval and jitter
 - Kill date support
@@ -40,7 +41,20 @@ Aphrodite is a lightweight cross-platform agent written in Nim, designed for Myt
 
 Aphrodite communicates over the default HTTP profile used by Mythic. All taskings and responses are done via POST requests.
 
-> **Note:** Only PSK mode is supported. Disable "Encrypted Key Exchange" in the HTTP profile settings, or leave AESPSK as `none` for plaintext mode.
+Encryption modes:
+- **PSK** — pre-shared AES-256 key baked at build time (disable "Encrypted Key Exchange")
+- **EKE** — RSA-4096 staging: agent generates a key pair at startup, Mythic encrypts the session AES key with the public key (Linux only)
+- **Plaintext** — no encryption, for testing
+
+### TCP
+
+Direct TCP connection to the Mythic server. Messages are framed with a 4-byte big-endian length prefix. Requires the [Mythic TCP C2 profile](https://github.com/MythicC2Profiles/tcp) installed on the server:
+
+```bash
+./mythic-cli install github https://github.com/MythicC2Profiles/tcp
+```
+
+Same encryption modes as HTTP.
 
 ## Build Options
 
@@ -62,9 +76,8 @@ Aphrodite compiles to a native binary with no runtime interpreter required on th
 | Mode       | Description                                                           |
 |------------|-----------------------------------------------------------------------|
 | PSK        | AES-256-CBC + HMAC-SHA256 with a pre-shared key baked into the binary |
+| EKE        | RSA-4096 staging — session AES key negotiated at runtime (Linux)      |
 | Plaintext  | No encryption — for lab/testing use only                              |
-
-> EKE (Encrypted Key Exchange) is not yet supported.
 
 ### Sleep Interval
 
@@ -72,9 +85,9 @@ Tune the sleep interval and jitter according to your operational requirements. H
 
 ## Known Issues
 
-### No EKE Support
+### EKE — Linux Only
 
-Aphrodite does not support Encrypted Key Exchange (RSA staging). Only PSK mode and plaintext mode are available.
+EKE (RSA-4096 staging) requires OpenSSL at build time and is currently only supported for Linux targets. Windows builds fall back to PSK mode automatically.
 
 ### Windows Cross-Compilation
 

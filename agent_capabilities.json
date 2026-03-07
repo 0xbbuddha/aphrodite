@@ -7,7 +7,7 @@
   },
   "payload_output": ["binary"],
   "architectures": ["x86_64"],
-  "c2": ["http"],
+  "c2": ["http", "tcp"],
   "mythic_version": "v3.4.21",
   "agent_version": "v1.0.0",
   "supported_wrappers": []
