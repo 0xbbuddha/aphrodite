@@ -17,13 +17,20 @@ class PsCommand(CommandBase):
     help_cmd = "ps"
     description = "List running processes"
     version = 1
+    is_process_list = True
     author = "@0xbbuddha"
     argument_class = PsArguments
     attackmapping = ["T1057"]
+    supported_ui_features = ["process_browser:list"]
+    browser_script = BrowserScript(script_name="ps", author="@0xbbuddha")
     attributes = CommandAttributes(supported_os=[SupportedOS.Linux, SupportedOS.Windows])
 
-    async def create_tasking(self, task: MythicTask) -> MythicTask:
-        return task
+    async def create_go_tasking(self, taskData: PTTaskMessageAllData) -> PTTaskCreateTaskingMessageResponse:
+        response = PTTaskCreateTaskingMessageResponse(
+            TaskID=taskData.Task.ID,
+            Success=True,
+        )
+        return response
 
-    async def process_response(self, response: AgentResponse):
+    async def process_response(self, task: PTTaskMessageAllData, response: any) -> PTTaskProcessResponseMessageResponse:
         pass

@@ -20,6 +20,7 @@ class ArpCommand(CommandBase):
     author = "@0xbbuddha"
     argument_class = ArpArguments
     attackmapping = ["T1018"]
+    browser_script = BrowserScript(script_name="arp", author="@0xbbuddha")
     attributes = CommandAttributes(supported_os=[SupportedOS.Linux, SupportedOS.Windows])
 
     async def create_tasking(self, task: MythicTask) -> MythicTask:

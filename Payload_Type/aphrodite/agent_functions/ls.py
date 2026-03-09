@@ -34,11 +34,18 @@ class LsCommand(CommandBase):
     author = "@0xbbuddha"
     argument_class = LsArguments
     attackmapping = ["T1083"]
+    supported_ui_features = ["file_browser:list"]
+    browser_script = BrowserScript(script_name="ls", author="@0xbbuddha")
     attributes = CommandAttributes(supported_os=[SupportedOS.Linux, SupportedOS.Windows])
 
-    async def create_tasking(self, task: MythicTask) -> MythicTask:
-        task.display_params = task.args.get_arg("path")
-        return task
+    async def create_go_tasking(self, taskData: PTTaskMessageAllData) -> PTTaskCreateTaskingMessageResponse:
+        response = PTTaskCreateTaskingMessageResponse(
+            TaskID=taskData.Task.ID,
+            Success=True,
+        )
+        path = taskData.args.get_arg("path")
+        response.DisplayParams = path if path else "."
+        return response
 
-    async def process_response(self, response: AgentResponse):
+    async def process_response(self, task: PTTaskMessageAllData, response: any) -> PTTaskProcessResponseMessageResponse:
         pass

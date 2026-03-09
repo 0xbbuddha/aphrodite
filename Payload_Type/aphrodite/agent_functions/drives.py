@@ -20,6 +20,7 @@ class DrivesCommand(CommandBase):
     author = "@0xbbuddha"
     argument_class = DrivesArguments
     attackmapping = ["T1082"]
+    browser_script = BrowserScript(script_name="drives", author="@0xbbuddha")
     attributes = CommandAttributes(supported_os=[SupportedOS.Linux, SupportedOS.Windows])
 
     async def create_tasking(self, task: MythicTask) -> MythicTask:

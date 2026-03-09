@@ -87,6 +87,18 @@ EKE (RSA-2048 staging) requires OpenSSL at build time and is currently only supp
 
 Windows binaries are cross-compiled from Linux using mingw-w64. Some edge cases around Windows API behavior may differ from a natively compiled binary.
 
+## TODO
+
+### Browser Scripts
+
+The following commands output plain text and could benefit from a structured table view in the Mythic UI. Each requires parsing the command output into JSON in the Nim agent and a matching JS browser script:
+
+| Command    | Output to parse                        | Columns                                      |
+|------------|----------------------------------------|----------------------------------------------|
+| `netstat`  | `ss -tunap` / `netstat -ano`           | Proto, Local, Remote, State, PID/Process      |
+| `ifconfig` | `ip addr` / `ipconfig /all`            | Interface, IP, Netmask, MAC, State            |
+| `jobs`     | active interactive jobs                | Task ID, Command, Status                      |
+
 ## Credit
 
 - [@0xbbuddha](https://github.com/0xbbuddha) — Author

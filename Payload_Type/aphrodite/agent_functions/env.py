@@ -20,6 +20,7 @@ class EnvCommand(CommandBase):
     author = "@0xbbuddha"
     argument_class = EnvArguments
     attackmapping = ["T1082"]
+    browser_script = BrowserScript(script_name="env", author="@0xbbuddha")
     attributes = CommandAttributes(supported_os=[SupportedOS.Linux, SupportedOS.Windows])
 
     async def create_tasking(self, task: MythicTask) -> MythicTask:
