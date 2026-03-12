@@ -300,7 +300,12 @@ NOTE: PSK mode — uncheck 'Encrypted Key Exchange' in the C2 profile.
                         )
 
                 if target_os == "windows":
-                    nim_flags += ["--os:windows", "--cpu:amd64", "-d:mingw", "-d:ssl", "-d:useWinssl"]
+                    nim_flags += [
+                        "--os:windows", "--cpu:amd64", "-d:mingw",
+                        "--gcc.exe:x86_64-w64-mingw32-gcc",
+                        "--gcc.linkerexe:x86_64-w64-mingw32-gcc",
+                        "-d:ssl", "-d:useWinssl",
+                    ]
                     out_binary = os.path.join(tmpdir, "output", "aphrodite.exe")
                 else:
                     nim_flags += ["-d:ssl"]

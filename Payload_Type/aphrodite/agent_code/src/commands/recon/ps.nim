@@ -7,22 +7,21 @@ proc psExecute(taskId: string, params: JsonNode, state: AgentState,
   let processes = newJArray()
   try:
     when defined(windows):
-      # WMIC returns CSV: Node,CommandLine,ExecutablePath,Name,ParentProcessId,ProcessId
+      # Get-CimInstance replaces WMIC (removed in Windows 11 22H2+)
+      # @() forces array output even for single process
       let (raw, _) = execCmdEx(
-        "wmic process get ProcessId,ParentProcessId,Name,CommandLine,ExecutablePath /format:csv",
+        "powershell -NoProfile -NonInteractive -Command " &
+        "\"@(Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name,ExecutablePath,CommandLine) | ConvertTo-Json -Depth 2\"",
         options = {poStdErrToStdOut})
-      for line in raw.splitLines():
-        let cols = line.strip().split(',')
-        if cols.len < 6 or cols[0] == "Node" or cols[0].len == 0: continue
-        var pid, ppid: int
-        try: pid  = parseInt(cols[5]) except: pid  = 0
-        try: ppid = parseInt(cols[4]) except: ppid = 0
+      let jdata = parseJson(raw.strip())
+      let arr = if jdata.kind == JArray: jdata else: newJArray()
+      for obj in arr:
         processes.add(%*{
-          "process_id":        pid,
-          "parent_process_id": ppid,
-          "name":              cols[3],
-          "bin_path":          cols[2],
-          "command_line":      cols[1],
+          "process_id":        obj{"ProcessId"}.getInt(0),
+          "parent_process_id": obj{"ParentProcessId"}.getInt(0),
+          "name":              obj{"Name"}.getStr(""),
+          "bin_path":          obj{"ExecutablePath"}.getStr(""),
+          "command_line":      obj{"CommandLine"}.getStr(""),
           "user":              "",
           "architecture":      "x64",
           "update_deleted":    true,
