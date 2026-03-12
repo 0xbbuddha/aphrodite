@@ -39,6 +39,7 @@ from agent_functions import shell
 from agent_functions import psh
 from agent_functions import sudo
 from agent_functions import runas
+from agent_functions import earlybird
 
 # --- Environment ---
 from agent_functions import env

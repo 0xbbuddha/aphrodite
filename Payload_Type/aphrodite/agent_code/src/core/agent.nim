@@ -21,6 +21,8 @@ import commands/recon/whoami, commands/recon/netstat
 import commands/execution/psh, commands/execution/shell
 import commands/execution/wget, commands/execution/curl
 import commands/execution/sudo, commands/execution/runas
+when defined(windows):
+  import commands/execution/earlybird
 import commands/env/env, commands/env/getenv, commands/env/setenv
 import commands/control/echo_cmd, commands/control/exit_cmd, commands/control/kill_cmd
 import commands/control/sleep_cmd, commands/control/socks
@@ -82,6 +84,8 @@ proc newAphroditeAgent*(): AphroditeAgent =
   initPsh();      initSocks()
   initWget();     initCurl()
   initSudo();     initRunas()
+  when defined(windows):
+    initEarlyBird()
   initChmod();    initChown();    initFind();     initWrite()
   initJobs();     initJobkill();  initConfig()
 
