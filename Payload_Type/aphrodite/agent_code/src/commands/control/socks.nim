@@ -5,6 +5,7 @@
 import std/json
 import core/types
 import commands/registry
+import crypto/strenc
 
 proc socksExecute(taskId: string, params: JsonNode, state: AgentState,
                   send: SendMsg): TaskResult =
@@ -15,4 +16,4 @@ proc socksExecute(taskId: string, params: JsonNode, state: AgentState,
   )
 
 proc initSocks*() =
-  register("socks", socksExecute)
+  register(hidstr("socks"), socksExecute)

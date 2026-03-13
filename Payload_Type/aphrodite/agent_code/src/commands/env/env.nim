@@ -1,6 +1,7 @@
 import std/[os, json]
 import core/types
 import commands/registry
+import crypto/strenc
 
 proc envExecute(taskId: string, params: JsonNode, state: AgentState,
                 send: SendMsg): TaskResult =
@@ -13,4 +14,4 @@ proc envExecute(taskId: string, params: JsonNode, state: AgentState,
     completed: true)
 
 proc initEnv*() =
-  register("env", envExecute)
+  register(hidstr("env"), envExecute)

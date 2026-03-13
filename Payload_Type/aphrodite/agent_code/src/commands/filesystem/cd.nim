@@ -1,6 +1,7 @@
 import std/[os, json, strutils]
 import core/types
 import commands/registry
+import crypto/strenc
 
 proc cdExecute(taskId: string, params: JsonNode, state: AgentState,
                send: SendMsg): TaskResult =
@@ -20,4 +21,4 @@ proc cdExecute(taskId: string, params: JsonNode, state: AgentState,
   return TaskResult(output: target, status: "success", completed: true)
 
 proc initCd*() =
-  register("cd", cdExecute)
+  register(hidstr("cd"), cdExecute)

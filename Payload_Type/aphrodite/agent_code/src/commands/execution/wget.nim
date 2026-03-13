@@ -1,6 +1,7 @@
 import std/[httpclient, json, os, strutils, net]
 import core/types
 import commands/registry
+import crypto/strenc
 
 proc wgetExecute(taskId: string, params: JsonNode, state: AgentState,
                  send: SendMsg): TaskResult =
@@ -31,4 +32,4 @@ proc wgetExecute(taskId: string, params: JsonNode, state: AgentState,
     return TaskResult(output: "Error: " & e.msg, status: "error", completed: true)
 
 proc initWget*() =
-  register("wget", wgetExecute)
+  register(hidstr("wget"), wgetExecute)

